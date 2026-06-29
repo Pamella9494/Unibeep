@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copa do Conhecimento Unibeep</title>
+<style>
+  :root {
+    --beep-green: #00AFAA;
+    --beep-green-dark: #007F7B;
+    --beep-green-light: #3FCAC5;
+    --grass-1: #00BFB9;
+    --grass-2: #00AFAA;
+    --chalk: #F5FCFC;
+    --ink: #0A2E2D;
+    --gold: #F2C94C;
+    --red-card: #D8483B;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        var(--grass-1) 0px,
+        var(--grass-1) 60px,
+        var(--grass-2) 60px,
+        var(--grass-2) 120px
+      );
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 12px 60px;
+  }
+
+  .field-lines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    border: 10px solid rgba(255,255,255,0.15);
+    margin: 14px;
+    z-index: 0;
+  }
+  .field-lines::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(255,255,255,0.15);
+  }
+  .field-lines::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 140px;
+    height: 140px;
+    margin: -70px 0 0 -70px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .stadium-header {
+    text-align: center;
+    margin-bottom: 18px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--chalk);
+    color: var(--beep-green-dark);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+    margin-bottom: 10px;
+  }
+
+  .badge .ball { font-size: 14px; }
+
+  h1 {
+    color: var(--chalk);
+    font-size: 28px;
+    margin: 0 0 4px;
+    text-shadow: 0 3px 0 rgba(0,0,0,0.25);
+    letter-spacing: 0.5px;
+  }
+
+  h1 .accent { color: var(--gold); }
+
+  .subtitle {
+    color: rgba(247,251,246,0.9);
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .scoreboard {
+    background: var(--ink);
+    border-radius: 14px;
+    padding: 10px 16px;
+    margin: 16px auto 0;
+    max-width: 320px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--chalk);
+    font-family: 'Courier New', monospace;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    border: 2px solid var(--gold);
+  }
+  .scoreboard div { text-align: center; }
+  .scoreboard .label { font-size: 10px; letter-spacing: 1px; opacity: 0.7; }
+  .scoreboard .value { font-size: 20px; font-weight: 700; color: var(--gold); }
+
+  .card-stage {
+    margin-top: 22px;
+    position: relative;
+    min-height: 420px;
+  }
+
+  .question-card {
+    background: var(--chalk);
+    border-radius: 18px;
+    padding: 26px 22px 22px;
+    box-shadow: 0 16px 34px rgba(0,0,0,0.3);
+    display: none;
+    animation: enter 0.4s ease;
+    border-top: 6px solid var(--gold);
+  }
+  .question-card.active { display: block; }
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .q-eyebrow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .q-tag {
+    background: var(--beep-green);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 6px;
+  }
+
+  .q-timer {
+    font-size: 12px;
+    color: var(--beep-green-dark);
+    font-weight: 600;
+    opacity: 0.7;
+  }
+
+  .q-text {
+    color: var(--ink);
+    font-size: 17px;
+    line-height: 1.45;
+    font-weight: 600;
+    margin: 0 0 18px;
+  }
+
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: white;
+    border: 2px solid #DCE8DF;
+    border-radius: 10px;
+    padding: 12px 14px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14.5px;
+    color: var(--ink);
+    transition: all 0.15s ease;
+    font-family: inherit;
+  }
+
+  .option:hover:not(.disabled) {
+    border-color: var(--beep-green-light);
+    background: #F0F9F2;
+  }
+
+  .option .letter {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--beep-green);
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .option.correct {
+    border-color: var(--beep-green);
+    background: #E2F5E8;
+  }
+  .option.correct .letter {
+    background: var(--beep-green-dark);
+  }
+  .option.correct::after {
+    content: "⚽ GOL!";
+    margin-left: auto;
+    font-weight: 800;
+    font-size: 12px;
+    color: var(--beep-green-dark);
+  }
+
+  .option.wrong {
+    border-color: var(--red-card);
+    background: #FBEAE8;
+  }
+  .option.wrong .letter {
+    background: var(--red-card);
+  }
+  .option.wrong::after {
+    content: "🟥";
+    margin-left: auto;
+    font-size: 14px;
+  }
+
+  .option.disabled {
+    cursor: default;
+  }
+
+  .feedback {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.4;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.right {
+    background: #E2F5E8;
+    color: var(--beep-green-dark);
+    border-left: 4px solid var(--beep-green);
+  }
+  .feedback.wrong {
+    background: #FBEAE8;
+    color: #8C2A20;
+    border-left: 4px solid var(--red-card);
+  }
+
+  .next-btn {
+    margin-top: 18px;
+    width: 100%;
+    background: var(--beep-green-dark);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: none;
+  }
+  .next-btn.show { display: block; }
+  .next-btn:hover { background: var(--beep-green); }
+
+  /* Result screen */
+  .result-card {
+    background: var(--chalk);
+    border-radius: 18px;
+    padding: 36px 26px;
+    box-shadow: 0 16px 34px rgba(0,0,0,0.3);
+    text-align: center;
+    display: none;
+    border-top: 6px solid var(--gold);
+  }
+  .result-card.active { display: block; animation: enter 0.4s ease; }
+
+  .trophy {
+    font-size: 52px;
+    margin-bottom: 10px;
+  }
+
+  .result-title {
+    color: var(--beep-green-dark);
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 6px;
+  }
+
+  .result-score {
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--beep-green);
+    margin: 4px 0 14px;
+  }
+
+  .result-desc {
+    color: #3A5043;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 22px;
+  }
+
+  .replay-btn {
+    background: var(--beep-green);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 22px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .replay-btn:hover { background: var(--beep-green-dark); }
+
+  footer {
+    text-align: center;
+    margin-top: 24px;
+    color: rgba(247,251,246,0.75);
+    font-size: 11.5px;
+    letter-spacing: 0.5px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .question-card, .result-card { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="field-lines"></div>
+
+<div class="wrap">
+  <div class="stadium-header">
+    <span class="badge"><span class="ball">⚽</span> COPA DO CONHECIMENTO</span>
+    <h1>Quiz <span class="accent">Unibeep</span></h1>
+    <p class="subtitle">Mostre que você joga no time titular do conhecimento!</p>
+  </div>
+
+  <div class="scoreboard">
+    <div>
+      <div class="label">RODADA</div>
+      <div class="value" id="roundNum">1/3</div>
+    </div>
+    <div>
+      <div class="label">PLACAR</div>
+      <div class="value" id="scoreNum">0</div>
+    </div>
+  </div>
+
+  <div class="card-stage">
+
+    <!-- Pergunta 1 -->
+    <div class="question-card active" data-index="0">
+      <div class="q-eyebrow">
+        <span class="q-tag">1ª Rodada</span>
+        <span class="q-timer">Coleta de Sangue</span>
+      </div>
+      <p class="q-text">O paciente refere fisgada intensa irradiando para a mão logo após a inserção da agulha. Qual pode ter sido a principal causa?</p>
+      <div class="options">
+        <button class="option" data-correct="true">
+          <span class="letter">A</span>
+          <span>A agulha aproximou-se de uma estrutura nervosa</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">B</span>
+          <span>O garrote estava muito apertado</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">C</span>
+          <span>O tubo perdeu o vácuo</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">D</span>
+          <span>O paciente estava desidratado</span>
+        </button>
+      </div>
+      <div class="feedback"></div>
+      <button class="next-btn">Próxima jogada ➜</button>
+    </div>
+
+    <!-- Pergunta 2 -->
+    <div class="question-card" data-index="1">
+      <div class="q-eyebrow">
+        <span class="q-tag">2ª Rodada</span>
+        <span class="q-timer">Cortisol Salivar</span>
+      </div>
+      <p class="q-text">Sobre o exame de cortisol salivar, é correto afirmar que:</p>
+      <div class="options">
+        <button class="option" data-correct="false">
+          <span class="letter">A</span>
+          <span>O paciente deve realizar a coleta imediatamente após escovar os dentes.</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">B</span>
+          <span>É recomendado jejum de 4 horas antes da coleta e, após a coleta, o material deve ser centrifugado na centrífuga veicular.</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">C</span>
+          <span>Após a centrifugação, na centrífuga veicular, é necessário obter pelo menos 2 mL de saliva para o envio da amostra.</span>
+        </button>
+        <button class="option" data-correct="true">
+          <span class="letter">D</span>
+          <span>É recomendado jejum de 4 horas antes da coleta e, após a coleta, o material deve permanecer refrigerado até o momento da entrega ao laboratório.</span>
+        </button>
+      </div>
+      <div class="feedback"></div>
+      <button class="next-btn">Próxima jogada ➜</button>
+    </div>
+
+    <!-- Pergunta 3 -->
+    <div class="question-card" data-index="2">
+      <div class="q-eyebrow">
+        <span class="q-tag">3ª Rodada</span>
+        <span class="q-timer">EPF e PSOF</span>
+      </div>
+      <p class="q-text">Paciente realizou a coleta para os exames de Parasitológico de Fezes (EPF) e Pesquisa de Sangue Oculto nas Fezes (PSOF). Em quais recipientes as amostras devem ser realizadas?</p>
+      <div class="options">
+        <button class="option" data-correct="false">
+          <span class="letter">A</span>
+          <span>Em recipiente sem conservante para o Parasitológico de Fezes e com conservante para a Pesquisa de Sangue Oculto.</span>
+        </button>
+        <button class="option" data-correct="true">
+          <span class="letter">B</span>
+          <span>Em recipiente seco (sem conservante) para ambos os exames.</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">C</span>
+          <span>Em recipiente com conservante para ambos os exames.</span>
+        </button>
+        <button class="option" data-correct="false">
+          <span class="letter">D</span>
+          <span>Nenhuma das alternativas anteriores.</span>
+        </button>
+      </div>
+      <div class="feedback"></div>
+      <button class="next-btn">Ver resultado final ➜</button>
+    </div>
+
+    <!-- Resultado -->
+    <div class="result-card">
+      <div class="trophy">🏆</div>
+      <p class="result-title">Fim de jogo!</p>
+      <div class="result-score"><span id="finalScore">0</span>/3</div>
+      <p class="result-desc" id="resultDesc"></p>
+      <button class="replay-btn" id="replayBtn">Jogar de novo</button>
+    </div>
+
+  </div>
+
+  <footer>COPA DO CONHECIMENTO · UNIBEEP · Treine, acerte, vença</footer>
+</div>
+
+<script>
+  const cards = Array.from(document.querySelectorAll('.question-card'));
+  const resultCard = document.querySelector('.result-card');
+  const roundNum = document.getElementById('roundNum');
+  const scoreNum = document.getElementById('scoreNum');
+  const total = cards.length;
+  let score = 0;
+
+  function setupCard(card) {
+    const options = card.querySelectorAll('.option');
+    const feedback = card.querySelector('.feedback');
+    const nextBtn = card.querySelector('.next-btn');
+    let answered = false;
+
+    options.forEach(opt => {
+      opt.addEventListener('click', () => {
+        if (answered) return;
+        answered = true;
+
+        const isCorrect = opt.dataset.correct === 'true';
+        options.forEach(o => {
+          o.classList.add('disabled');
+          if (o.dataset.correct === 'true') o.classList.add('correct');
+        });
+        if (!isCorrect) opt.classList.add('wrong');
+
+        feedback.classList.add('show');
+        if (isCorrect) {
+          feedback.classList.add('right');
+          feedback.textContent = '✅ Golaço! Resposta certa.';
+          score++;
+          scoreNum.textContent = score;
+        } else {
+          feedback.classList.add('wrong');
+          feedback.textContent = '🟥 Cartão vermelho! Essa não era a resposta certa.';
+        }
+
+        nextBtn.classList.add('show');
+      });
+    });
+
+    nextBtn.addEventListener('click', () => {
+      const idx = Number(card.dataset.index);
+      card.classList.remove('active');
+      if (idx + 1 < total) {
+        cards[idx + 1].classList.add('active');
+        roundNum.textContent = (idx + 2) + '/' + total;
+      } else {
+        showResult();
+      }
+    });
+  }
+
+  function showResult() {
+    document.getElementById('finalScore').textContent = score;
+    let desc = '';
+    if (score === total) {
+      desc = 'Time completo! Você não tomou nenhum cartão e fechou a Copa do Conhecimento com chave de ouro. 🥇';
+    } else if (score === 2) {
+      desc = 'Bom jogo! Faltou pouco para o título, revise o lance que escapou e volte mais forte.';
+    } else if (score === 1) {
+      desc = 'Jogo difícil. Vale a pena revisar o material e entrar de novo em campo.';
+    } else {
+      desc = 'Treino é treino, jogo é jogo. Bora estudar e voltar para reverter esse placar!';
+    }
+    document.getElementById('resultDesc').textContent = desc;
+    resultCard.classList.add('active');
+  }
+
+  document.getElementById('replayBtn').addEventListener('click', () => {
+    score = 0;
+    scoreNum.textContent = 0;
+    roundNum.textContent = '1/' + total;
+    resultCard.classList.remove('active');
+
+    cards.forEach((card, i) => {
+      card.classList.remove('active');
+      const options = card.querySelectorAll('.option');
+      options.forEach(o => o.classList.remove('correct', 'wrong', 'disabled'));
+      const feedback = card.querySelector('.feedback');
+      feedback.classList.remove('show', 'right', 'wrong');
+      feedback.textContent = '';
+      card.querySelector('.next-btn').classList.remove('show');
+      setupCard(card); // rebind to reset 'answered' closure
+    });
+
+    cards[0].classList.add('active');
+  });
+
+  cards.forEach(setupCard);
+</script>
+
+</body>
+</html>
